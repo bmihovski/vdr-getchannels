@@ -10,8 +10,6 @@ __daterel__    = "2015-03-02"
 __maintainer__ = "Armando Basile"
 __email__      = "hmandevteam@gmail.com"
 
-
-
 #import sys
 import urllib
 import string
@@ -21,14 +19,11 @@ import argparse
 from app_params import app_params
 
 
-
-
 # main class to manage channels list generation
 class getchannels:
     
     # Attributes
-    
-    
+
     # class constructor
     def __init__(self):
 
@@ -61,12 +56,6 @@ class getchannels:
         
         # write output
         self.__write_output_file()
-        
-        return
-
-
-
-
 
     # check for command line arguments
     def __parse_args(self):
@@ -92,12 +81,6 @@ class getchannels:
         self.__args = parser.parse_args()        
         return
 
-
-
-
-
-
-
     # read config file
     def __parse_config_file(self):
         # update local var with config file content
@@ -119,12 +102,6 @@ class getchannels:
                     self.__outputList.append(row)
                     self.__outputListLower.append(row.replace(" ", "").lower())
 
-        
-
-
-
-
-
     # get html code from kingofsat using specified url and extract data
     def __parse_kingofsat_list(self):
         
@@ -139,13 +116,6 @@ class getchannels:
         # parse all transponder section founded
         for idx in range(1, len(self.__transponder_list)):            
             self.__parse_transponder(self.__transponder_list[idx])
-            
-
-
-
-
-
-
 
     # parse single transponder
     def __parse_transponder(self, trans_code):
@@ -303,14 +273,6 @@ class getchannels:
                     # update value
                     self.__channels_bouquets[ib] += chRow + "\n"
 
-        
-        
-        
-        
-        
-        
-
-    
     # parse channel section
     def __parse_channel(self, channel_str):
         
@@ -377,25 +339,7 @@ class getchannels:
             out_channel_list.append([chName, bqt, sid, vpid, apid, subtxt])
     
         return out_channel_list
-    
 
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-
-    
     # parse audio pid string
     def __parse_audio_pid(self, strPid):
         
@@ -483,15 +427,7 @@ class getchannels:
         
         
         return outAudioPid
-    
-            
-            
-        
-        
-        
-        
-            
-    
+
     # extract audio pid info from each audio pid
     def __parse_audio_pid_single(self, strInfo):
         outinfo = ""
@@ -562,23 +498,7 @@ class getchannels:
             outinfo = "oth" + outinfo
         
         return outinfo
-    
 
-
-
-
-
-
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
     # parse bouquet section
     def __parse_bouquet(self, bouquetStr):
         
@@ -608,16 +528,7 @@ class getchannels:
             tra1 = string.find(bouquetStr, '''href="''', tra2+3)
         
         return bqtList
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+
     # write output file (channels list)
     def __write_output_file(self):
         outputStr = ""
@@ -654,19 +565,6 @@ class getchannels:
             file = open(self.__args.outfile + '.missing', "w")
             file.write(outputStrMissing)
             file.close()        
-        
-        
-        
-        
-        
-        
-
-
 
 # EntryPoint
 app=getchannels()
-
-
-
-
-
