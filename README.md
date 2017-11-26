@@ -28,6 +28,8 @@ optional arguments:
   -o FILENAME, --output FILENAME
                         enable use of config file, searched in "conf"
                         subfolder, to generate output
+  -ot, --output_tm True
+                        enable use of stdout
 ```
 
 List of all channels not founded is pushed into <FILENAME>.missing file
@@ -35,5 +37,6 @@ List of all channels not founded is pushed into <FILENAME>.missing file
 Examples:
 ```
 $ python getchannels.py -u -c getchannels.conf -l 13.0E -o channels.conf
+$ python getchannels.py -c bulsat.conf -l 39.0E -ot True
 ```
 

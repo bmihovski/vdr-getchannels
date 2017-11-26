@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from cmath import polar
 
 __author__     = "Armando Basile"
 __copyright__  = "Copyright 2011-2015"
@@ -74,8 +75,11 @@ class getchannels:
                             help='''set KingOfSat source channels list used to generate local VDR channels list.
                                     Can use one of follow values: ''' + ", ".join(app_params.sat_list.keys()))
                                     
-        parser.add_argument('-o', '--output', type=str, metavar='FILENAME', dest='outfile', required=True,
+        parser.add_argument('-o', '--output', type=str, metavar='FILENAME', dest='outfile',
                             help='enable use of config file, searched in "conf" subfolder, to generate output')
+
+        parser.add_argument('-ot', '--output_tm', type=bool, dest='out_tm',
+                            required=True, help='enable use of stdout')
 
         # assign command line parse output to class attribute
         self.__args = parser.parse_args()        
@@ -111,7 +115,8 @@ class getchannels:
         f.close()
         
         # split webpage content in many trasponder sections
-        self.__transponder_list = web_content.split('''color="yellow">''' + app_params.sat_id[self.__args.list_id])
+        self.__transponder_list = (web_content.
+                                   split('<tr bgcolor="#D2D2D2">'))
         
         # parse all transponder section founded
         for idx in range(1, len(self.__transponder_list)):            
@@ -126,8 +131,8 @@ class getchannels:
         tmp=0
         
         # search initial transponder data
-        tra1= string.find(trans_code, '''<td width="5%" class="bld">''')
-        tmp = string.find(trans_code, '''<td width="5%" class="nbld">''')
+        tra1= string.find(trans_code, '''<td width="7%" class="bld">''')
+        tmp = string.find(trans_code, '''<td dir="ltr" width="2%" align="right">''')
         
         # check for second possible tag
         if tmp > 0 and tmp < tra1:
@@ -139,12 +144,13 @@ class getchannels:
         
         # polarity
         tra1 = string.find(trans_code, '''class="bld">''', tra2+1)        
-        tmp = string.find(trans_code, '''class="nbld">''', tra2+1)   
+        tmp = string.find(trans_code, '''</td>''', tra2+1)   
         if tmp > 0 and tmp < tra1:
             tra1 = tmp+1
     
         tra2 = string.find(trans_code, "</td>", tra1+12)
         polar = trans_code[tra1+12:tra2]
+        polar = polar.replace('''h="2%" class="bld">''', "")
         
         # check for polar digit representation
         if self.__args.upper == True:
@@ -164,7 +170,7 @@ class getchannels:
 
         # symbol rate
         tra1 = string.find(trans_code, '''class="bld">''', tra2+1)        
-        tmp = string.find(trans_code, '''class="nbld">''', tra2+1)   
+        tmp = string.find(trans_code, '''class="bld">''', tra2+1)   
         if tmp > 0 and tmp < tra1:
             tra1 = tmp+1
     
@@ -173,7 +179,7 @@ class getchannels:
     
         # fec
         tra1 = string.find(trans_code, '''class="bld">''', tra2+1)        
-        tmp = string.find(trans_code, '''class="nbld">''', tra2+1)   
+        tmp = string.find(trans_code, '''</td>''', tra2+1)   
         if tmp > 0 and tmp < tra1:
             tra1 = tmp+1
     
@@ -181,18 +187,18 @@ class getchannels:
         fec = trans_code[tra1+12:tra2]
     
         # network id
-        tra1 = string.find(trans_code, "NID:", tra2+1)        
+        tra1 = string.find(trans_code, '''class="w3-hide-small" width="4%">''', tra2+1)        
         tra2 = string.find(trans_code, "</td>", tra1+4)
         nid = trans_code[tra1+4:tra2]
-        nid = nid.replace('''<a class="n">''', "")
-        nid = nid.replace("</a>", "").strip()
+        nid = nid.replace('''"w3-hide-small" width="4%">''', "")
+        nid = nid.replace("s=", "").strip()
     
         # transponder id
-        tra1 = string.find(trans_code, "TID:", tra2+1)        
+        tra1 = string.find(trans_code, '''class="w3-hide-small" width="4%">''', tra2+1)        
         tra2 = string.find(trans_code, "</td>", tra1+4)
         tid = trans_code[tra1+4:tra2]
-        tid = tid.replace('''<a class="n">''', "")
-        tid = tid.replace("</a>", "").strip()
+        tid = tid.replace('''"w3-hide-small" width="4%">''', "")
+        tid = tid.replace("s=", "").strip()
     
     
         # check for dvb-s type
@@ -223,7 +229,7 @@ class getchannels:
         
         # split remaining data in many channel sections
         tmpCh = trans_code[tra2+4:]
-        tmpChCodes = tmpCh.split(''' title="Id: ''')
+        tmpChCodes = tmpCh.split('title="Id:')
         
         # parse all channel section founded
         for idx in range(1, len(tmpChCodes)):
@@ -245,7 +251,6 @@ class getchannels:
                 else:
                     # unknow value, set to '0'
                     chRow = chRow.replace("<caid>", "0")
-                
                 # check for config file usage
                 if self.__args.configfile != None:
                     # try to found channel in our preset list from config file
@@ -282,7 +287,7 @@ class getchannels:
         out_channel_list = list()
     
         # channel name
-        tra2 = string.find(channel_str, "\"")
+        tra2 = string.find(channel_str, '"')
         chName = channel_str[tra1:tra2]
         
         # bouquets
@@ -292,52 +297,41 @@ class getchannels:
         tra2 = string.find(channel_str, "</TD>", tra1+10)
         bqtStr = channel_str[tra1+10:tra2]
         bouquetList = self.__parse_bouquet(bqtStr)
-        
+
         # service id
-        tra1 = string.find(channel_str, "<TD ", tra2+3)
-        tra1 = string.find(channel_str, "<TD ", tra1+10)
-        tra1 = string.find(channel_str, ">", tra1+10)    
-        tra2 = string.find(channel_str, "<", tra1+1)
-        sid = channel_str[tra1+1:tra2].strip()
-        
+        tra1 = string.find(channel_str, '''td class="s">''',
+                           tra2+3)
+        tra2 = string.find(channel_str, "</td>", tra1+1)
+        sid = channel_str[tra1+13:tra2].strip()
+
         # video pid
-        tra1 = string.find(channel_str, "<TD ", tra2+1)
-        tra1 = string.find(channel_str, ">", tra1+10)    
-        tra2 = string.find(channel_str, "<", tra1+1)
-        vpid = channel_str[tra1+1:tra2].strip()
-    
+        tra1 = string.find(channel_str, '''width="5%">''')
+        tra2 = string.find(channel_str, "<", tra1+4)
+        vpid = channel_str[tra1+11:tra2].strip()
+
         # audio pid
-        tra1 = string.find(channel_str, "<TD ", tra2+1)
-        tra1 = string.find(channel_str, ">", tra1+10)    
-        tra2 = string.find(channel_str, "</TD>", tra1+1)
+        tra1 = string.find(channel_str, '''class="">''', tra2+5)
+        #tra1 = string.find(channel_str, "&nbsp;", tra1+10)
+        tra2 = string.find(channel_str, '<font color="blue"', tra1+15)
         apidStr = channel_str[tra1:tra2].strip()
         apid = self.__parse_audio_pid(apidStr)
-        
+
         # pcr
-        tra1 = string.find(channel_str, "<TD ", tra2+1)
-        tra1 = string.find(channel_str, "<TD ", tra1+10)
-        tra1 = string.find(channel_str, ">", tra1+10)    
-        tra2 = string.find(channel_str, "<", tra1+1)
-        pcr = channel_str[tra1+1:tra2].strip().replace("&nbsp;", "")
-        
-        # update video pid with pcr parameter if required
-        if (pcr != vpid):
-            vpid += "+" + pcr
-    
+        pcr = vpid
+
         # Subtitles
-        tra1 = string.find(channel_str, "<TD ", tra2+1)
-        tra1 = string.find(channel_str, ">", tra1+10)    
+        tra1 = string.find(channel_str, '''w3-hide-small pid">''', tra2+1)
+        tra1 = string.find(channel_str, ">", tra1+10)
         tra2 = string.find(channel_str, "<", tra1+1)
         subtxt = channel_str[tra1+1:tra2].strip().replace("&nbsp;", "")
-        
+
         if subtxt == "":
             subtxt = "0"
-        
-        
+
         # fill channels output list
         for bqt in bouquetList:
             out_channel_list.append([chName, bqt, sid, vpid, apid, subtxt])
-    
+
         return out_channel_list
 
     # parse audio pid string
@@ -360,7 +354,7 @@ class getchannels:
         for audiopid in audiopids:
             # process audio pid section     
             pidstart = string.find(audiopid, ">")
-            pidstop  = string.find(audiopid, "<", pidstart+1)
+            pidstop  = string.find(audiopid, "<", pidstart)
             
             # check for characters next pid
             if pidstop < 0:
@@ -440,13 +434,13 @@ class getchannels:
         
         
         # parse language name
-        if string.find(strInfo, '''title="Italiano''') > 0:
-            outinfo = "ita" + outinfo
-        elif string.find(strInfo, '''title="Inglese''') > 0:
+        if string.find(strInfo, '''title="Bulgarian''') > 0:
+            outinfo = "bul" + outinfo
+        elif string.find(strInfo, '''title="English''') > 0:
             outinfo = "eng" + outinfo
         elif string.find(strInfo, '''title="Polacco''') > 0:
             outinfo = "pol" + outinfo
-        elif string.find(strInfo, '''title="Romeno''') > 0:
+        elif string.find(strInfo, '''title="Romanian''') > 0:
             outinfo = "rom" + outinfo
         elif string.find(strInfo, '''title="Farsi''') > 0:
             outinfo = "far" + outinfo
@@ -462,9 +456,9 @@ class getchannels:
             outinfo = "ara" + outinfo
         elif string.find(strInfo, '''title="Bengali''') > 0:
             outinfo = "ben" + outinfo
-        elif string.find(strInfo, '''title="Tamil''') > 0:
-            outinfo = "tam" + outinfo
-        elif string.find(strInfo, '''title="Russo''') > 0:
+        elif string.find(strInfo, '''title="Serbian''') > 0:
+            outinfo = "ser" + outinfo
+        elif string.find(strInfo, '''title="Russian''') > 0:
             outinfo = "rus" + outinfo
         elif string.find(strInfo, '''title="Turco''') > 0:
             outinfo = "tur" + outinfo
@@ -474,7 +468,7 @@ class getchannels:
             outinfo = "afg" + outinfo
         elif string.find(strInfo, '''title="Ceco''') > 0:
             outinfo = "cze" + outinfo
-        elif string.find(strInfo, '''title="Ungherese''') > 0:
+        elif string.find(strInfo, '''title="Hungarian''') > 0:
             outinfo = "hun" + outinfo
         elif string.find(strInfo, '''title="Olandese''') > 0:
             outinfo = "ned" + outinfo
@@ -521,11 +515,11 @@ class getchannels:
         
         # loop for each other bouquet
         while tra1 > 0:
-            tra1 = string.find(bouquetStr, ">", tra1+6)
+            tra1 = string.find(bouquetStr, '>', tra1+6)
             tra2 = string.find(bouquetStr, "</a>", tra1+1)
             bqtList.append(bouquetStr[tra1+1:tra2].replace(" ", ""))
             
-            tra1 = string.find(bouquetStr, '''href="''', tra2+3)
+            tra1 = -1
         
         return bqtList
 
@@ -555,12 +549,15 @@ class getchannels:
         
         
         # write data in to output file
-        file = open(self.__args.outfile, "w")
-        file.write(outputStr)
-        file.close()
-        
+        if not self.__args.out_tm:
+            file = open(self.__args.outfile, "w")
+            file.write(outputStr)
+            file.close()
+        else:
+            print outputStr
+
         # check for missing channels
-        if (len(outputStrMissing) > 0):
+        if (len(outputStrMissing) > 0 and not self.__args.out_tm):
             # write data in missing output file
             file = open(self.__args.outfile + '.missing', "w")
             file.write(outputStrMissing)
