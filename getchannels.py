@@ -42,7 +42,7 @@ class getchannels:
         if self.__args.configfile != None:
             # check for config file presence
         
-            if os.path.exists('./conf/' + self.__args.configfile) == False:
+            if not os.path.exists('./conf/' + self.__args.configfile):
                 # file not founded                
                 print 'specified config file not founded \n' + os.path.abspath('./conf/' + self.__args.configfile) + \
                       '\nplease check it and retry'
